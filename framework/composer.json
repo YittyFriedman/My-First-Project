@@ -1,0 +1,15 @@
+{
+    "name": "yittyf/my-first-project",
+    "authors": [
+        {
+            "name": "YittyFriedman",
+            "email": "yitty416@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/http-foundation": "^3.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.2"
+    }
+}
