@@ -13,42 +13,29 @@ use Symfony\Component\Routing;
 use Symfony\Component\HttpKernel;
 
 //creating a function which is a generic controller that renders a template when there is no specific logic
-function render_template(Request $request){
+/*function render_template(Request $request){
     extract($request->attributes->all(), EXTR_SKIP);
     ob_start();
     include sprintf(__DIR__.'/../src/pages/%s.php', $_route);
 
     return new Response(ob_get_clean());
 }
-
+*/
 
 $request = Request::createFromGlobals();
 //setting the route to the correct file path
 $routes = include __DIR__.'/../src/app.php';
 
 $context = new Symfony\Component\Routing\RequestContext();
-$context->fromRequest($request);
 $matcher = new Symfony\Component\Routing\Matcher\UrlMatcher($routes, $context);
 
 //adding in the getController and getArgument methods
-$controllerResolver = new HttpKernel\Controller\ControllerResolver();
-$argumentResolver = new HttpKernel\Controller\ArgumentResolver();
+$controllerResolver = new ControllerResolver();
+$argumentResolver = new ArgumentResolver();
 
-//trying to set our request, controller, arguments, and response variables
-try{
-    $request->attributes->add($matcher->match($request->getPathInfo()));
+$framework = new Simplex\Framework($matcher, $controllerResolver, $argumentResolver);
+$response = $framework->handle($request);
 
-    $controller = $controllerResolver->getController($request);
-    $arguments = $argumentResolver->getArguments($request, $controller);
-
-    $response = call_user_func($controller, $arguments);
-}
-catch (\Symfony\Component\Routing\Exception\RouteNotFoundException $e){
-    $response = new Response('Not Found', 404);
-}
-catch (Exception $e){
-    $response = new Response('An error occurred', 500);
-}
 
 
 $response->send();
