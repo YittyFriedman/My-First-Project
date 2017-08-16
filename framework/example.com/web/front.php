@@ -10,27 +10,38 @@ require_once __DIR__.'/../vendor/autoload.php';
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing;
-
+use Symfony\Component\HttpKernel;
 
 //creating a function which is a generic controller that renders a template when there is no specific logic
-function render_template($request){
+function render_template(Request $request){
     extract($request->attributes->all(), EXTR_SKIP);
     ob_start();
-    include sprintf(__DIR__.'/../src/pages/%s.php', $_routes);
+    include sprintf(__DIR__.'/../src/pages/%s.php', $_route);
 
     return new Response(ob_get_clean());
 }
 
+
 $request = Request::createFromGlobals();
+//setting the route to the correct file path
 $routes = include __DIR__.'/../src/app.php';
 
 $context = new Symfony\Component\Routing\RequestContext();
 $context->fromRequest($request);
 $matcher = new Symfony\Component\Routing\Matcher\UrlMatcher($routes, $context);
 
+//adding in the getController and getArgument methods
+$controllerResolver = new HttpKernel\Controller\ControllerResolver();
+$argumentResolver = new HttpKernel\Controller\ArgumentResolver();
+
+//trying to set our request, controller, arguments, and response variables
 try{
     $request->attributes->add($matcher->match($request->getPathInfo()));
-    $response = call_user_func($request->attributes->get('_controller'), $request);
+
+    $controller = $controllerResolver->getController($request);
+    $arguments = $argumentResolver->getArguments($request, $controller);
+
+    $response = call_user_func($controller, $arguments);
 }
 catch (\Symfony\Component\Routing\Exception\RouteNotFoundException $e){
     $response = new Response('Not Found', 404);
